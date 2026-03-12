@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %} — Downloads{% endblock %}
+
+{% block content %}
+<div class="downloads-page">
+
+  <!-- Search -->
+  <div class="dl-search-section">
+    <div class="dl-search-bar">
+      <input type="text" id="dl-search" class="dl-search-input" placeholder="Search on indexers..." data-i18n-placeholder="dl_search_placeholder"
+             onkeydown="if(event.key==='Enter')searchProwlarr()">
+      <select id="dl-platform" class="dl-platform-select">
+        <option value="" data-i18n="all_platforms">All platforms</option>
+        <option value="PS5">PS5</option>
+        <option value="PS4">PS4</option>
+        <option value="PS3">PS3</option>
+        <option value="PS2">PS2</option>
+        <option value="PS1">PS1</option>
+        <option value="PSP">PSP</option>
+        <option value="PS Vita">PS Vita</option>
+      </select>
+      <label class="dl-ps-only-label" title="Search only PlayStation console categories">
+        <input type="checkbox" id="dl-ps-only" checked onchange="togglePsOnly()">
+        <span data-i18n="ps_only">PlayStation only</span>
+      </label>
+      <button class="btn btn-primary" onclick="searchProwlarr()">🔍 <span data-i18n="search_btn">Search</span></button>
+    </div>
+    <div id="dl-search-status" style="font-size:.82rem;color:var(--textd);margin-top:.3rem"></div>
+  </div>
+
+  <!-- Search Results -->
+  <div id="dl-results-section" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+      <h3 style="margin:0" data-i18n="search_results">Search results</h3>
+      <button class="btn btn-outline btn-sm" onclick="clearResults()">✕ <span data-i18n="close">Close</span></button>
+    </div>
+    <div id="dl-results-list" class="dl-results-table"></div>
+  </div>
+
+  <!-- Active Downloads -->
+  <div class="dl-section">
+    <h3>⬇️ <span data-i18n="dl_active">Active Downloads</span>
+      <span id="dl-active-count" class="tab-badge" style="display:none">0</span>
+    </h3>
+    <div id="dl-active-list"></div>
+  </div>
+
+  <!-- History -->
+  <div class="dl-section">
+    <h3>📋 <span data-i18n="dl_history">History</span></h3>
+    <div id="dl-history-list"></div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/downloads.js"></script>
+{% endblock %}

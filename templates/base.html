@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PS Library{% block title %}{% endblock %}</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/main.css">
+{% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<header>
+  <a href="/" class="logo"><div class="logo-icon">🎮</div>PS Library</a>
+  <div class="header-stats">
+    <div class="stat"><strong id="st-total">0</strong><span data-i18n="games">Games</span></div>
+    <div class="stat"><strong id="st-played">0</strong><span data-i18n="played">Played</span></div>
+    <div class="stat"><strong id="st-unfin">0</strong><span data-i18n="unfinished">Unfinished</span></div>
+    <div class="stat"><strong id="st-wish">0</strong><span data-i18n="wishlist">Wishlist</span></div>
+    <div class="stat"><strong id="st-files">0</strong><span data-i18n="files">Files</span></div>
+    <div class="stat"><strong id="st-lic">0</strong><span data-i18n="licenses">Licenses</span></div>
+  </div>
+  <select class="lang-select" id="lang-select" title="Limba / Language">
+    <option value="ro">🇷🇴 Română</option>
+  </select>
+</header>
+
+<nav class="tabs">
+  <a href="/" class="tab {% if page == 'library' %}active{% endif %}">📚 <span data-i18n="tab_library">Library</span></a>
+  <a href="/fisiere" class="tab {% if page == 'files' %}active{% endif %}">💾 <span data-i18n="tab_files">File Manager</span> <span class="tab-badge" id="unassigned-badge" style="display:none">!</span></a>
+  <a href="/descarcari" class="tab {% if page == 'downloads' %}active{% endif %}">⬇️ <span data-i18n="tab_downloads">Downloads</span></a>
+  <a href="/setari" class="tab {% if page == 'settings' %}active{% endif %}">⚙️ <span data-i18n="tab_settings">Settings</span></a>
+</nav>
+
+{% block outer %}<div class="container">
+{% block content %}{% endblock %}
+</div>{% endblock %}
+
+<footer class="site-footer">
+  <span>PS Library</span>
+  <span class="footer-links">
+    <a href="https://github.com/Inoo5246/ps-library" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://buymeacoffee.com/inoo5246" target="_blank" rel="noopener">Buy Me a Coffee</a>
+    <a href="https://ko-fi.com/inoo5246" target="_blank" rel="noopener">Ko-fi</a>
+  </span>
+</footer>
+
+<script src="/static/js/utils.js"></script>
+{% block scripts %}{% endblock %}
+
+</body>
+</html>

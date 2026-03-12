@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% block title %} — {{ game.title }}{% endblock %}
+
+{% block outer %}
+<div class="gdp-page">
+
+  {# ── Blurred cinematic background ── #}
+  {% if game.banner_url or game.cover_url %}
+  <div class="gdp-bg" style="background-image:url('{{ game.banner_url or game.cover_url }}')"></div>
+  {% endif %}
+  <div class="gdp-bg-overlay"></div>
+
+  <div class="gdp-inner">
+
+    {# ── Back button ── #}
+    <a href="/" class="gdp-back">← <span data-i18n="tab_library">Library</span></a>
+
+    <div class="gdp-layout">
+
+      {# ══════════════ LEFT: Cover ══════════════ #}
+      <div class="gdp-cover-col">
+        {% if game.cover_url %}
+        <img src="{{ game.cover_url }}" class="gdp-cover-img" alt="{{ game.title }}">
+        {% else %}
+        <div class="gdp-no-cover">🎮</div>
+        {% endif %}
+
+        <div class="gdp-cover-badges">
+          <span class="platform-tag" style="font-size:.78rem;padding:3px 10px">{{ game.platform }}</span>
+          <span class="status-badge status-{{ game.status }}" style="position:static;font-size:.68rem">{{ game.status }}</span>
+        </div>
+
+        {% if game.media_type and game.media_type != 'Digital' %}
+        <div style="text-align:center;margin-top:.3rem">
+          <span class="media-badge media-{{ game.media_type }}" style="font-size:.72rem">
+            {% if game.media_type == 'BD' %}📀{% elif game.media_type == 'DVD' %}💿{% elif game.media_type == 'CD' %}💿{% elif game.media_type == 'Cartridge' %}🎴{% elif game.media_type == 'UMD' %}🔘{% elif game.media_type == 'Images' %}🖼️{% elif game.media_type == 'Arhiva' %}📦{% elif game.media_type == 'Folder' %}📁{% endif %}
+            {{ game.media_type }}
+          </span>
+        </div>
+        {% endif %}
+      </div>
+
+      {# ══════════════ RIGHT: Info ══════════════ #}
+      <div class="gdp-info-col">
+
+        <h1 class="gdp-title">{{ game.title }}</h1>
+
+        <div class="stars gdp-stars">
+          {% for i in range(1, 6) %}
+          <span class="star {% if game.rating and i <= game.rating %}filled{% endif %}">★</span>
+          {% endfor %}
+        </div>
+
+        <div class="gdp-meta">
+          {% if game.genre %}<div><strong data-i18n="gen_label">Genre</strong>: {{ game.genre }}</div>{% endif %}
+          {% if game.developer %}<div><strong data-i18n="dev_label">Dev</strong>: {{ game.developer }}</div>{% endif %}
+          {% if game.publisher %}<div><strong data-i18n="publisher_label">Publisher</strong>: {{ game.publisher }}</div>{% endif %}
+          {% if game.release_date %}<div><strong data-i18n="launched">Released</strong>: {{ game.release_date }}</div>{% endif %}
+          {% if game.metacritic %}<div><strong data-i18n="metacritic">Metacritic</strong>: <span style="color:var(--played);font-weight:700">{{ game.metacritic }}</span></div>{% endif %}
+          {% if game.ps_code %}<div><strong data-i18n="ps_code_label">PS Code</strong>: <code class="gdp-pscode">{{ game.ps_code }}</code></div>{% endif %}
+          {% if game.physical_edition %}<div><strong data-i18n="edition_label">Edition</strong>: {{ game.physical_edition }}</div>{% endif %}
+          {% if game.physical_condition %}<div><strong data-i18n="condition_label">Condition</strong>: {{ game.physical_condition }}</div>{% endif %}
+        </div>
+
+        {% if game.description %}
+        <div class="gdp-desc">{{ game.description }}</div>
+        {% endif %}
+
+        {# ── Video Links ── #}
+        {% if video_links %}
+        <div class="gdp-media-section">
+          <h2 class="gdp-section-title">🎬 <span data-i18n="videos">Videos</span></h2>
+          <div class="gdp-video-grid" id="gdp-video-grid">
+            {# rendered by JS from VIDEO_LINKS #}
+          </div>
+        </div>
+        {% endif %}
+
+        {# ── Gallery (screenshots + other images) ── #}
+        {% if gallery %}
+        <div class="gdp-media-section">
+          <h2 class="gdp-section-title">📸 <span data-i18n="gallery">Gallery</span></h2>
+          <div class="gdp-gallery-grid">
+            {% for img in gallery %}
+            <div class="gdp-gallery-item" onclick='openLightbox({{ img.url | tojson }})'>
+              <img src="{{ img.url }}" alt="{{ img.filename }}" loading="lazy">
+              <span class="gdp-gallery-type">{{ img.type }}</span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        {# ── Files / Saves / DLC ── #}
+        <div class="gdp-files-section">
+          <div class="gdp-tabs-bar">
+            <button class="gdp-tab-btn active" onclick="switchGdpTab(this,'gdp-files-panel')">
+              💿 <span data-i18n="associated_files">Associated files</span>
+              <span class="gdp-tab-count">{{ (files|length) + (licenses|length) }}</span>
+            </button>
+            <button class="gdp-tab-btn" onclick="switchGdpTab(this,'gdp-saves-panel')">
+              💾 <span data-i18n="saves_tab">Saves</span> <span class="gdp-tab-count">{{ saves|length }}</span>
+            </button>
+            <button class="gdp-tab-btn" onclick="switchGdpTab(this,'gdp-dlc-panel')">
+              📦 DLC <span class="gdp-tab-count">{{ dlcs|length }}</span>
+            </button>
+            <a href="/fisiere" class="btn btn-outline btn-sm gdp-fm-link" data-i18n="manage_in_fm">FM</a>
+          </div>
+
+          {# Files panel #}
+          <div id="gdp-files-panel" class="gdp-panel-body">
+            {% if not files and not licenses %}
+            <div class="gdp-empty" data-i18n="no_associated_files">No associated files</div>
+            {% else %}
+              {% for f in files %}
+              <div class="gdp-file-row">
+                <span class="type-badge type-{{ f.file_type }}">{{ f.file_type }}</span>
+                <span class="gdp-file-name" title="{{ f.filepath or '' }}">{{ '⬆️' if f.is_uploaded else '💾' }} {{ f.filename }}</span>
+                {% if f.content_id %}<span class="content-id" style="font-size:.7rem">{{ f.content_id }}</span>{% endif %}
+                {% if f.file_size_str %}<span class="gdp-file-size">{{ f.file_size_str }}</span>{% endif %}
+                <a class="btn btn-outline btn-sm" href="/api/files/{{ f.id }}/download" style="flex-shrink:0;font-size:.72rem;padding:2px 7px">⬇️</a>
+              </div>
+              {% endfor %}
+              {% for l in licenses %}
+              <div class="gdp-file-row">
+                <span class="type-badge type-{{ l.license_type }}">{{ l.license_type }}</span>
+                <span class="gdp-file-name" title="{{ l.filepath or '' }}">🔑 {{ l.filename }}</span>
+                {% if l.content_id %}<span class="content-id" style="font-size:.7rem">{{ l.content_id }}</span>{% endif %}
+                <a class="btn btn-outline btn-sm" href="/api/licenses/{{ l.id }}/download" style="flex-shrink:0;font-size:.72rem;padding:2px 7px">⬇️</a>
+              </div>
+              {% endfor %}
+            {% endif %}
+          </div>
+
+          {# Saves panel #}
+          <div id="gdp-saves-panel" class="gdp-panel-body" style="display:none">
+            {% if not saves %}
+            <div class="gdp-empty" data-i18n="no_saves_uploaded">No saves uploaded</div>
+            {% else %}
+              {% for s in saves %}
+              <div class="gdp-file-row">
+                <span class="gdp-file-name" title="{{ s.filepath or '' }}">💾 {{ s.filename }}</span>
+                {% if s.file_size_str %}<span class="gdp-file-size">{{ s.file_size_str }}</span>{% endif %}
+                <a class="btn btn-outline btn-sm" href="/api/saves/{{ s.id }}/download" style="flex-shrink:0;font-size:.72rem;padding:2px 7px">⬇️</a>
+              </div>
+              {% endfor %}
+            {% endif %}
+          </div>
+
+          {# DLC panel #}
+          <div id="gdp-dlc-panel" class="gdp-panel-body" style="display:none">
+            {% if not dlcs %}
+            <div class="gdp-empty" data-i18n="no_dlc_uploaded">No DLC uploaded</div>
+            {% else %}
+              {% for d in dlcs %}
+              <div class="gdp-file-row">
+                <span class="type-badge type-{{ d.file_type or 'PKG' }}">{{ d.file_type or 'PKG' }}</span>
+                <span class="gdp-file-name" title="{{ d.filepath or '' }}">📦 {{ d.filename }}</span>
+                {% if d.content_id %}<span class="content-id" style="font-size:.68rem;font-family:monospace">{{ d.content_id }}</span>{% endif %}
+                {% if d.file_size_str %}<span class="gdp-file-size">{{ d.file_size_str }}</span>{% endif %}
+                <a class="btn btn-outline btn-sm" href="/api/dlc/{{ d.id }}/download" style="flex-shrink:0;font-size:.72rem;padding:2px 7px">⬇️</a>
+              </div>
+              {% endfor %}
+            {% endif %}
+          </div>
+        </div>{# end gdp-files-section #}
+
+        {# ── Action buttons ── #}
+        <div class="gdp-actions">
+          <button class="btn btn-outline" id="gdp-btn-fetch" onclick="gdpFetchImages()">
+            ⬇️ <span data-i18n="save_images_local">Save images locally</span>
+          </button>
+          <a href="/descarcari?game_id={{ game.id }}&search={{ game.title | urlencode }}" class="btn btn-primary btn-sm">
+            ⬇️ <span data-i18n="download">Download</span>
+          </a>
+          <a href="/?edit_game={{ game.id }}" class="btn btn-edit">
+            ✏️ <span data-i18n="edit">Edit</span>
+          </a>
+          <button class="btn btn-danger" onclick="gdpDeleteGame()">
+            🗑️ <span data-i18n="delete">Delete</span>
+          </button>
+        </div>
+
+      </div>{# end gdp-info-col #}
+    </div>{# end gdp-layout #}
+  </div>{# end gdp-inner #}
+</div>{# end gdp-page #}
+
+{# ── Lightbox overlay ── #}
+<div class="gdp-lightbox" id="gdp-lightbox" onclick="closeLightbox(event)">
+  <button class="gdp-lb-close" onclick="closeLightbox()">&times;</button>
+  <button class="gdp-lb-prev" onclick="lbNav(-1,event)">&lsaquo;</button>
+  <img src="" id="gdp-lb-img" class="gdp-lb-img" alt="">
+  <button class="gdp-lb-next" onclick="lbNav(1,event)">&rsaquo;</button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const GAME_ID = {{ game.id }};
+  const VIDEO_LINKS = {{ video_links | tojson }};
+  const GALLERY = {{ gallery | tojson }};
+</script>
+<script src="/static/js/game_detail.js?v=2"></script>
+{% endblock %}

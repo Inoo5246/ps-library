@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+{% block title %} — Settings{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+  <div class="settings-section">
+    <h3 data-i18n="settings_language">Interface Language</h3>
+    <div class="form-group" style="max-width:260px">
+      <select id="settings-lang-select" onchange="settingsChangeLang(this.value)">
+        <option value="ro">🇷🇴 Română</option>
+        <option value="en">🇬🇧 English</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <h3 data-i18n="auto_scan">Auto-scan</h3>
+    <div class="form-group" style="max-width:260px">
+      <label data-i18n="auto_scan_label">Auto-scan interval (hours, 0 = disabled)</label>
+      <input type="number" id="auto-scan-hours" min="0" max="168" value="0" style="width:100px">
+    </div>
+  </div>
+
+  <!-- Căi foldere date -->
+  <div class="settings-section">
+    <h3 data-i18n="settings_data_paths">Data Folder Paths</h3>
+    <p class="settings-hint" data-i18n="settings_data_paths_hint">Leave empty to use default values from docker-compose.yml. The path must be mounted as a Docker volume.</p>
+
+    <div class="form-group">
+      <label>🖼️ <span data-i18n="images_dir_label">Images folder</span></label>
+      <div class="path-row">
+        <input type="text" id="setting-images-dir" placeholder="/data/images">
+        <button class="btn-browse" onclick="openDataPathBrowser('setting-images-dir')" title="Browse">📂</button>
+        <button class="btn btn-outline btn-sm" onclick="testDataPath('setting-images-dir','dpt-images')">🔍 <span data-i18n="path_test">Test</span></button>
+      </div>
+      <div class="folder-test" id="dpt-images"></div>
+      <small style="color:var(--textd);font-size:.72rem">Structure: <code>IMAGES_DIR/{platform}/{game}/{cover|banner|screenshot|other}/</code></small>
+    </div>
+
+    <div class="form-group">
+      <label>💾 <span data-i18n="saves_dir_label">Saves folder</span></label>
+      <div class="path-row">
+        <input type="text" id="setting-saves-dir" placeholder="/data/saves">
+        <button class="btn-browse" onclick="openDataPathBrowser('setting-saves-dir')" title="Browse">📂</button>
+        <button class="btn btn-outline btn-sm" onclick="testDataPath('setting-saves-dir','dpt-saves')">🔍 <span data-i18n="path_test">Test</span></button>
+      </div>
+      <div class="folder-test" id="dpt-saves"></div>
+      <small style="color:var(--textd);font-size:.72rem">Structure: <code>SAVES_DIR/{platform}/{game}/</code></small>
+    </div>
+
+    <div class="form-group">
+      <label>📦 <span data-i18n="dlc_dir_label">Folder DLC</span></label>
+      <div class="path-row">
+        <input type="text" id="setting-dlc-dir" placeholder="/data/dlc">
+        <button class="btn-browse" onclick="openDataPathBrowser('setting-dlc-dir')" title="Browse">📂</button>
+        <button class="btn btn-outline btn-sm" onclick="testDataPath('setting-dlc-dir','dpt-dlc')">🔍 <span data-i18n="path_test">Test</span></button>
+      </div>
+      <div class="folder-test" id="dpt-dlc"></div>
+      <small style="color:var(--textd);font-size:.72rem">Structure: <code>DLC_DIR/{platform}/{game}/</code></small>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+      <h3 data-i18n="settings_folders" style="margin:0">Scan Folders</h3>
+      <button class="btn btn-outline btn-sm" onclick="addFolderMapping()">
+        + <span data-i18n="settings_add_folder">Add folder</span>
+      </button>
+    </div>
+    <p class="settings-hint" data-i18n="settings_folders_hint">Add custom paths to game folders. Each path must be mounted as a Docker volume.</p>
+    <div id="folders-list"></div>
+  </div>
+
+  <div class="settings-section">
+    <h3 data-i18n="settings_api_keys">API Keys (docker-compose.yml)</h3>
+    <div id="api-keys-status"></div>
+    <p class="settings-hint" data-i18n-html="settings_api_hint" style="margin-top:.6rem">
+      Add keys in <code>docker-compose.yml</code> under <code>environment:</code>:<br>
+      <code>RAWG_API_KEY=...</code> &nbsp; <code>IGDB_CLIENT_ID=...</code> &nbsp; <code>IGDB_CLIENT_SECRET=...</code> &nbsp; <code>MOBYGAMES_API_KEY=...</code>
+    </p>
+  </div>
+
+  <!-- ps3netsrv -->
+  <div class="settings-section">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+      <h3 style="margin:0">ps3netsrv</h3>
+      <div style="display:flex;gap:.4rem;align-items:center">
+        <span id="ps3ns-status-dot" class="api-key-dot off"></span>
+        <span id="ps3ns-status-text" style="font-size:.78rem;color:var(--textd)" data-i18n="stopped">Stopped</span>
+      </div>
+    </div>
+    <p class="settings-hint" data-i18n="ps3netsrv_hint">Network server for PS3 (webMAN MOD). Allows the console to load ISO/folder games over the network.</p>
+
+    <div class="form-group" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end">
+      <div style="flex:1;min-width:200px">
+        <label data-i18n="ps3ns_games_dir">Games directory served</label>
+        <div class="path-row">
+          <input type="text" id="ps3ns-games-dir" placeholder="/games">
+          <button class="btn-browse" onclick="openDataPathBrowser('ps3ns-games-dir')" title="Browse">📂</button>
+        </div>
+      </div>
+      <div style="width:110px">
+        <label data-i18n="port">Port</label>
+        <input type="number" id="ps3ns-port" value="38008" min="1" max="65535" style="width:100%">
+      </div>
+    </div>
+
+    <div class="form-group" style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:.4rem;margin:0;cursor:pointer">
+        <input type="checkbox" id="ps3ns-enabled" style="width:auto">
+        <span data-i18n="ps3ns_auto_start">Auto-start on container start</span>
+      </label>
+    </div>
+
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem">
+      <button class="btn btn-primary btn-sm" id="ps3ns-btn-start" onclick="ps3nsStart()" data-i18n="start">Start</button>
+      <button class="btn btn-danger btn-sm" id="ps3ns-btn-stop" onclick="ps3nsStop()" style="display:none" data-i18n="stop">Stop</button>
+      <button class="btn btn-outline btn-sm" id="ps3ns-btn-restart" onclick="ps3nsRestart()" style="display:none" data-i18n="restart">Restart</button>
+      <button class="btn btn-outline btn-sm" onclick="ps3nsToggleLogs()" data-i18n="logs">Logs</button>
+    </div>
+
+    <div id="ps3ns-log-box" style="display:none;margin-top:.6rem;background:var(--bg1);border:1px solid var(--border);border-radius:6px;padding:.5rem;max-height:200px;overflow-y:auto;font-family:monospace;font-size:.72rem;color:var(--textd);white-space:pre-wrap"></div>
+    <div id="ps3ns-message" style="font-size:.82rem;margin-top:.4rem"></div>
+  </div>
+
+  <!-- Redump.org -->
+  <div class="settings-section">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+      <h3 style="margin:0">🎯 Redump.org</h3>
+      <label class="btn btn-outline btn-sm" style="cursor:pointer">
+        📂 Import .dat
+        <input type="file" id="redump-dat-input" accept=".dat" style="display:none"
+               onchange="importRedumpDat(this)">
+      </label>
+    </div>
+    <p class="settings-hint" data-i18n-html="redump_hint">
+      Download DAT files from
+      <a href="https://redump.org/downloads/" target="_blank" style="color:var(--cyan)">redump.org</a>
+      for PS1 / PS2 / PSP and import them here.
+      In <strong>File Manager</strong> press 🔍 on any <code>.bin</code> / <code>.iso</code> to verify integrity and get the exact title + region.
+    </p>
+    <div id="redump-dats-list"></div>
+  </div>
+
+  <!-- Prowlarr -->
+  <div class="settings-section">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+      <h3 style="margin:0">🔍 Prowlarr</h3>
+      <div style="display:flex;gap:.4rem;align-items:center">
+        <span id="prowlarr-status-dot" class="api-key-dot off"></span>
+        <span id="prowlarr-status-text" style="font-size:.78rem;color:var(--textd)" data-i18n="not_connected">Not connected</span>
+      </div>
+    </div>
+    <p class="settings-hint" data-i18n-html="prowlarr_hint">Connect to <a href="https://prowlarr.com" target="_blank" style="color:var(--cyan)">Prowlarr</a> for searching games on indexers.</p>
+    <div class="form-group">
+      <label>URL</label>
+      <div class="path-row">
+        <input type="text" id="prowlarr-url" placeholder="http://localhost:9696">
+        <button class="btn btn-outline btn-sm" onclick="testProwlarr()">🔍 Test</button>
+      </div>
+    </div>
+    <div class="form-group" style="max-width:580px">
+      <label>API Key <small style="color:var(--textd)">(Prowlarr > Settings > General)</small></label>
+      <input type="password" id="prowlarr-api-key" placeholder="API Key">
+    </div>
+    <div id="prowlarr-indexers" style="margin-top:.5rem"></div>
+    <div id="prowlarr-message" style="font-size:.82rem;margin-top:.4rem"></div>
+  </div>
+
+  <!-- Download Clients -->
+  <div class="settings-section">
+    <h3>⬇️ <span data-i18n="download_clients">Download Clients</span></h3>
+    <p class="settings-hint" data-i18n="dl_clients_hint">Configure torrent download clients.</p>
+
+    <div class="form-group" style="max-width:260px">
+      <label data-i18n="default_client">Default client</label>
+      <select id="dl-default-client">
+        <option value="qbittorrent">qBittorrent</option>
+        <option value="transmission">Transmission</option>
+      </select>
+    </div>
+
+    <!-- qBittorrent -->
+    <div style="border:1px solid var(--border);border-radius:8px;padding:.8rem;margin-bottom:.8rem">
+      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem">
+        <label style="display:flex;align-items:center;gap:.4rem;margin:0;cursor:pointer">
+          <input type="checkbox" id="qbt-enabled" style="width:auto">
+          <strong>qBittorrent</strong>
+        </label>
+        <span id="qbt-status-dot" class="api-key-dot off"></span>
+        <span id="qbt-status-text" style="font-size:.78rem;color:var(--textd)"></span>
+      </div>
+      <div class="form-group">
+        <label>URL</label>
+        <div class="path-row">
+          <input type="text" id="qbt-url" placeholder="http://localhost:8080">
+          <button class="btn btn-outline btn-sm" onclick="testDlClient('qbittorrent')">🔍 Test</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:.8rem;flex-wrap:wrap">
+        <div class="form-group" style="flex:1;min-width:140px">
+          <label>Username</label>
+          <input type="text" id="qbt-username" placeholder="admin">
+        </div>
+        <div class="form-group" style="flex:1;min-width:140px">
+          <label data-i18n="password">Password</label>
+          <input type="password" id="qbt-password">
+        </div>
+      </div>
+      <div style="display:flex;gap:.8rem;flex-wrap:wrap">
+        <div class="form-group" style="flex:1;min-width:140px">
+          <label data-i18n="category">Category</label>
+          <input type="text" id="qbt-category" placeholder="ps-library">
+        </div>
+        <div class="form-group" style="flex:1;min-width:200px">
+          <label data-i18n="save_path">Save path</label>
+          <input type="text" id="qbt-save-path" placeholder="/downloads">
+        </div>
+      </div>
+    </div>
+
+    <!-- Transmission -->
+    <div style="border:1px solid var(--border);border-radius:8px;padding:.8rem">
+      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem">
+        <label style="display:flex;align-items:center;gap:.4rem;margin:0;cursor:pointer">
+          <input type="checkbox" id="tr-enabled" style="width:auto">
+          <strong>Transmission</strong>
+        </label>
+        <span id="tr-status-dot" class="api-key-dot off"></span>
+        <span id="tr-status-text" style="font-size:.78rem;color:var(--textd)"></span>
+      </div>
+      <div class="form-group">
+        <label>URL</label>
+        <div class="path-row">
+          <input type="text" id="tr-url" placeholder="http://localhost:9091">
+          <button class="btn btn-outline btn-sm" onclick="testDlClient('transmission')">🔍 Test</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:.8rem;flex-wrap:wrap">
+        <div class="form-group" style="flex:1;min-width:140px">
+          <label>Username</label>
+          <input type="text" id="tr-username">
+        </div>
+        <div class="form-group" style="flex:1;min-width:140px">
+          <label data-i18n="password">Password</label>
+          <input type="password" id="tr-password">
+        </div>
+      </div>
+      <div class="form-group" style="max-width:300px">
+        <label data-i18n="save_path">Save path</label>
+        <input type="text" id="tr-save-path" placeholder="/downloads">
+      </div>
+    </div>
+  </div>
+
+  <!-- Auto-monitor -->
+  <div class="settings-section">
+    <h3>📡 <span data-i18n="auto_monitor">Auto-monitor Wishlist</span></h3>
+    <p class="settings-hint" data-i18n="auto_monitor_hint">Automatically search for Wishlist games on indexers and download when available. Requires Prowlarr + a configured download client.</p>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer">
+        <input type="checkbox" id="auto-monitor-enabled" style="width:auto">
+        <span data-i18n="auto_monitor_enable">Enable auto-monitoring</span>
+      </label>
+    </div>
+    <div class="form-group" style="max-width:260px">
+      <label data-i18n="auto_monitor_interval">Check interval (minutes)</label>
+      <input type="number" id="auto-monitor-interval" min="5" max="1440" value="30" style="width:100px">
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:1rem;padding:1.2rem 0 .5rem">
+    <button class="btn btn-primary" onclick="saveSettings()">💾 <span data-i18n="save">Save</span></button>
+    <span id="settings-status" style="font-size:.84rem;color:var(--textd)"></span>
+  </div>
+</div>
+
+<!-- Modal: Folder Browser -->
+<div class="modal-overlay" id="modal-browse-folder">
+  <div class="modal" style="max-width:500px;height:70vh;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+      <h2 data-i18n="browse_folder_title" style="margin:0">Choose folder</h2>
+      <button class="btn btn-secondary btn-sm" onclick="closeFolderBrowser()">✕</button>
+    </div>
+    <div class="fb-path-bar" id="fb-path-bar" style="font-size:.78rem;color:var(--textd);background:var(--bg3);padding:.3rem .6rem;border-radius:4px;margin-bottom:.5rem;word-break:break-all">/</div>
+    <div id="fb-list" style="flex:1;overflow-y:auto;border:1px solid var(--border);border-radius:6px;background:var(--bg2)"></div>
+    <div id="fb-info" style="font-size:.78rem;margin:.4rem 0"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeFolderBrowser()" data-i18n="cancel">Cancel</button>
+      <button class="btn btn-primary" onclick="selectFolder()">
+        ✅ <span data-i18n="settings_select_folder">Select this folder</span>
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/settings.js"></script>
+{% endblock %}

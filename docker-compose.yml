@@ -1,0 +1,21 @@
+services:
+  ps-library:
+    build: .
+    container_name: ps-library
+    ports:
+      - "5000:5000"
+      - "38008:38008"    # ps3netsrv
+    volumes:
+      - ./ps-data:/data
+      - ${GAMES_PATH:-./library/games}:/games
+      - ${IMAGES_PATH:-./library/images}:/images
+      - ${DLC_PATH:-./library/dlc}:/dlc
+      - ${SAVES_PATH:-./library/save}:/save
+      - ${DOWNLOADS_PATH:-./library/downloads}:/downloads
+    environment:
+      - RAWG_API_KEY=${RAWG_API_KEY:-}
+      - IGDB_CLIENT_ID=${IGDB_CLIENT_ID:-}
+      - IGDB_SECRET=${IGDB_SECRET:-}
+      - MOBY_API_KEY=${MOBY_API_KEY:-}
+      - MAX_UPLOAD_MB=${MAX_UPLOAD_MB:-50000}
+    restart: unless-stopped

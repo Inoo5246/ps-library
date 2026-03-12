@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% block title %} — File Manager{% endblock %}
+
+{% block content %}
+<div class="info-banner">
+  <span style="font-size:1.1rem;flex-shrink:0">📂</span>
+  <div data-i18n-html="info_banner_docker">Mount folders in <code>docker-compose.yml</code>:
+  <code>- /hdd/games:/games</code> and <code>- /hdd/licenses:/licenses</code>
+  then press <strong>Scan</strong>. PKG files are analyzed automatically (Content ID extracted from header).</div>
+</div>
+<div class="fm-layout">
+  <div class="fm-sidebar">
+    <h3 data-i18n="platforms">Platforms</h3>
+    <div class="platform-nav" id="plat-nav">
+      <button class="plat-btn active" onclick="filterPlatform(this,'')"><span data-i18n="all">All</span> <span class="plat-count" id="pc-all">0</span></button>
+      <button class="plat-btn" onclick="filterPlatform(this,'PS5')">PS5 <span class="plat-count" id="pc-PS5">0</span></button>
+      <button class="plat-btn" onclick="filterPlatform(this,'PS4')">PS4 <span class="plat-count" id="pc-PS4">0</span></button>
+      <button class="plat-btn" onclick="filterPlatform(this,'PS3')">PS3 <span class="plat-count" id="pc-PS3">0</span></button>
+      <button class="plat-btn" onclick="filterPlatform(this,'PS2')">PS2 <span class="plat-count" id="pc-PS2">0</span></button>
+      <button class="plat-btn" onclick="filterPlatform(this,'PS1')">PS1 <span class="plat-count" id="pc-PS1">0</span></button>
+      <button class="plat-btn" onclick="filterPlatform(this,'PSP')">PSP <span class="plat-count" id="pc-PSP">0</span></button>
+    </div>
+    <div class="fm-divider"></div>
+    <h3 data-i18n="type">Tip</h3>
+    <div class="platform-nav">
+      <button class="plat-btn type-filter-btn active" onclick="filterType(this,'')"><span data-i18n="all">All</span></button>
+      <button class="plat-btn type-filter-btn" onclick="filterType(this,'ISO')"><span class="type-badge type-ISO">ISO</span></button>
+      <button class="plat-btn type-filter-btn" onclick="filterType(this,'PKG')"><span class="type-badge type-PKG">PKG</span></button>
+      <button class="plat-btn type-filter-btn" onclick="filterType(this,'BIN')"><span class="type-badge type-BIN">BIN/IMG</span></button>
+    </div>
+    <div class="fm-divider"></div>
+    <h3 data-i18n="storage">Storage</h3>
+    <div id="storage-mini" style="font-size:.74rem;color:var(--textd);line-height:2;"></div>
+  </div>
+  <div>
+    <div class="fm-mobile-filters" id="fm-mobile-filters">
+      <select id="mobile-plat-filter" onchange="mobileFilterPlatform(this.value)">
+        <option value="" data-i18n="all_platforms">All platforms</option>
+        <option value="PS5">PS5</option><option value="PS4">PS4</option>
+        <option value="PS3">PS3</option><option value="PS2">PS2</option>
+        <option value="PS1">PS1</option><option value="PSP">PSP</option>
+      </select>
+      <select id="mobile-type-filter" onchange="mobileFilterType(this.value)">
+        <option value="" data-i18n="all_types">All types</option>
+        <option value="ISO">ISO</option><option value="PKG">PKG</option><option value="BIN">BIN/IMG</option>
+      </select>
+    </div>
+    <div class="inner-tabs">
+      <button class="inner-tab active" onclick="switchInnerTab(this,'game-files-tab')">💿 <span class="tab-label" data-i18n="game_files">Game Files</span></button>
+      <button class="inner-tab" onclick="switchInnerTab(this,'licenses-tab')">🔑 <span class="tab-label" data-i18n="licenses_tab">Licenses</span></button>
+      <button class="inner-tab" onclick="switchInnerTab(this,'saves-tab');loadSaves()">💾 <span class="tab-label" data-i18n="saves_tab">Saves</span></button>
+      <button class="inner-tab" onclick="switchInnerTab(this,'dlc-tab');loadDlc()">📦 <span class="tab-label">DLC</span></button>
+      <button class="inner-tab" onclick="switchInnerTab(this,'upload-tab')">⬆️ <span class="tab-label" data-i18n="upload">Upload</span></button>
+      <button class="inner-tab" onclick="switchInnerTab(this,'images-tab');loadImageGallery()">🖼️ <span class="tab-label" data-i18n="images">Images</span></button>
+      <button class="inner-tab" onclick="switchInnerTab(this,'tree-tab');loadFolderTree()">📁 <span class="tab-label" data-i18n="structure">Structure</span></button>
+    </div>
+    <!-- Game Files -->
+    <div id="game-files-tab">
+      <div class="fm-toolbar">
+        <button class="btn btn-success btn-sm" onclick="scanFiles()">🔍 <span data-i18n="scan_folders">Scan Folders</span></button>
+        <span class="scan-status" id="scan-status"></span>
+      </div>
+      <div class="storage-cards" id="storage-cards"></div>
+      <div class="file-table-wrap">
+        <div class="file-table-header">
+          <div data-i18n="file">File</div><div data-i18n="type">Type</div>
+          <div data-i18n="platform">Platf.</div><div data-i18n="content_id">Content ID</div>
+          <div data-i18n="linked_game">Linked game</div><div data-i18n="actions">Act.</div>
+        </div>
+        <div id="files-list"><div class="loading-row"><span class="spinner"></span></div></div>
+      </div>
+    </div>
+    <!-- Licenses -->
+    <div id="licenses-tab" style="display:none">
+      <div class="fm-toolbar">
+        <button class="btn btn-success btn-sm" onclick="scanFiles()">🔍 <span data-i18n="scan">Scan</span></button>
+        <span class="scan-status" id="scan-status-lic"></span>
+      </div>
+      <div class="file-table-wrap">
+        <div class="file-table-header" style="grid-template-columns:2.5fr .9fr 1.5fr 1.5fr 110px">
+          <div data-i18n="file">File</div><div data-i18n="type">Type</div>
+          <div data-i18n="content_id">Content ID</div><div data-i18n="linked_game">Linked game</div>
+          <div data-i18n="actions">Actions</div>
+        </div>
+        <div id="licenses-list"><div class="loading-row"><span class="spinner"></span></div></div>
+      </div>
+    </div>
+    <!-- Savegame -->
+    <div id="saves-tab" style="display:none">
+      <div class="fm-toolbar" style="flex-wrap:wrap;gap:.5rem">
+        <select id="saves-game-filter" onchange="loadSaves()" style="min-width:200px;max-width:340px">
+          <option value="" data-i18n="all_games">All games</option>
+        </select>
+        <span id="saves-status" style="font-size:.78rem;color:var(--textd);margin-left:auto"></span>
+      </div>
+      <div class="file-table-wrap">
+        <div class="file-table-header" style="grid-template-columns:2.5fr .8fr 1.5fr .8fr 90px">
+          <div data-i18n="file">File</div>
+          <div data-i18n="platform">Platf.</div>
+          <div data-i18n="linked_game">Game</div>
+          <div data-i18n="size">Size</div>
+          <div data-i18n="actions">Act.</div>
+        </div>
+        <div id="saves-list"><div class="loading-row"><span class="spinner"></span></div></div>
+      </div>
+      <div style="margin-top:1.2rem;padding:1rem;background:var(--bg2);border:1px solid var(--border);border-radius:8px">
+        <h4 style="margin:0 0 .7rem;font-size:.87rem">⬆️ <span data-i18n="upload_save">Upload save</span></h4>
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center">
+          <select id="save-game-select" style="min-width:200px;max-width:280px"><option value="" data-i18n="no_game">— No game —</option></select>
+          <label class="btn btn-outline btn-sm" style="cursor:pointer">
+            📄 <span data-i18n="choose_file">Choose file</span>
+            <input type="file" id="save-upload-input" multiple style="display:none" onchange="uploadSave()">
+          </label>
+          <label class="btn btn-outline btn-sm" style="cursor:pointer" title="Upload a folder with its entire structure">
+            📁 <span data-i18n="choose_folder">Choose folder</span>
+            <input type="file" id="save-folder-input" webkitdirectory multiple style="display:none" onchange="uploadSaveFolder()">
+          </label>
+          <span id="save-upload-status" style="font-size:.82rem;color:var(--textd)"></span>
+        </div>
+      </div>
+    </div>
+    <!-- DLC -->
+    <div id="dlc-tab" style="display:none">
+      <div class="fm-toolbar" style="flex-wrap:wrap;gap:.5rem">
+        <select id="dlc-game-filter" onchange="loadDlc()" style="min-width:200px;max-width:340px">
+          <option value="" data-i18n="all_games">All games</option>
+        </select>
+        <span id="dlc-status" style="font-size:.78rem;color:var(--textd);margin-left:auto"></span>
+      </div>
+      <div class="file-table-wrap">
+        <div class="file-table-header" style="grid-template-columns:2fr .7fr .7fr 1.4fr 1.2fr .8fr 90px">
+          <div data-i18n="file">File</div>
+          <div data-i18n="type">Type</div>
+          <div data-i18n="platform">Platf.</div>
+          <div data-i18n="linked_game">Game</div>
+          <div data-i18n="content_id">Content ID</div>
+          <div data-i18n="size">Size</div>
+          <div data-i18n="actions">Act.</div>
+        </div>
+        <div id="dlc-list"><div class="loading-row"><span class="spinner"></span></div></div>
+      </div>
+      <div style="margin-top:1.2rem;padding:1rem;background:var(--bg2);border:1px solid var(--border);border-radius:8px">
+        <h4 style="margin:0 0 .7rem;font-size:.87rem">⬆️ <span data-i18n="upload_dlc">Upload DLC</span></h4>
+        <p class="settings-hint" data-i18n="dlc_help" style="margin:.0 0 .6rem">DLC PKGs are analyzed automatically (Content ID extracted). If a game is recognized, the file is organized in dlc/{Platform}/{Game}/.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center">
+          <select id="dlc-game-select" style="min-width:200px;max-width:280px"><option value="" data-i18n="auto_detect_dlc">— Auto-detect —</option></select>
+          <label class="btn btn-outline btn-sm" style="cursor:pointer">
+            📂 <span data-i18n="choose_file">Choose file</span>
+            <input type="file" id="dlc-upload-input" multiple accept=".pkg,.zip" style="display:none" onchange="uploadDlc()">
+          </label>
+          <span id="dlc-upload-status" style="font-size:.82rem;color:var(--textd)"></span>
+        </div>
+      </div>
+    </div>
+    <!-- Upload -->
+    <div id="upload-tab" style="display:none">
+      <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-upload-input').click()">
+        <div class="drop-zone-icon">📁</div>
+        <p data-i18n="drag_files">Drag files here or click to select</p>
+        <small>ISO, PKG, BIN, IMG, CHD, PBP, RAP, RIF, EDAT</small>
+      </div>
+      <input type="file" id="file-upload-input" multiple accept=".iso,.pkg,.bin,.img,.cue,.chd,.pbp,.apk,.rap,.rif,.edat,.sdat">
+      <div id="upload-queue"></div>
+    </div>
+    <!-- Images Gallery -->
+    <div id="images-tab" style="display:none">
+      <div class="fm-toolbar">
+        <div style="font-size:.82rem;color:var(--textd);" data-i18n="all_uploaded_images">All uploaded images</div>
+        <span id="img-gallery-status" style="font-size:.78rem;color:var(--textd);"></span>
+      </div>
+      <div class="img-gallery" id="img-gallery">
+        <div class="loading-row"><span class="spinner"></span></div>
+      </div>
+    </div>
+    <!-- Folder Tree -->
+    <div id="tree-tab" style="display:none">
+      <div class="fm-toolbar">
+        <div style="font-size:.82rem;color:var(--textd)">Organized structure: <code style="background:var(--bg3);padding:1px 6px;border-radius:3px;color:var(--cyan)">/games/PS5/Game Title/</code></div>
+        <button class="btn btn-success btn-sm" onclick="loadFolderTree()">🔄 <span data-i18n="reload">Reload</span></button>
+      </div>
+      <div id="folder-tree"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Redump Result Editor -->
+<div class="modal-overlay" id="modal-redump">
+<div class="modal" style="max-width:500px">
+  <h2>🔍 <span data-i18n="redump_result">Redump Result</span></h2>
+  <input type="hidden" id="rdump-fid">
+  <div id="rdump-status-bar" style="border-radius:8px;padding:.65rem .9rem;margin-bottom:1rem;font-size:.82rem"></div>
+  <div class="form-group">
+    <label data-i18n="game_title_label">Game title</label>
+    <input type="text" id="rdump-title" placeholder="Found or manually entered title">
+  </div>
+  <div class="form-group">
+    <label data-i18n="disc_version">Disc / Version</label>
+    <input type="text" id="rdump-disc" placeholder="e.g. Disc 1, Rev A (optional)">
+  </div>
+  <div class="form-group">
+    <label data-i18n="platform">Platform</label>
+    <input type="text" id="rdump-plat" readonly style="opacity:.5;cursor:default">
+  </div>
+  <div id="rdump-hashes" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;
+    padding:.5rem .9rem;font-family:'Rajdhani',sans-serif;font-size:.75rem;color:var(--textd);
+    letter-spacing:.5px;margin-bottom:.9rem"></div>
+  <div class="modal-actions">
+    <button class="btn btn-secondary" onclick="document.getElementById('modal-redump').classList.remove('show')" data-i18n="close">Close</button>
+    <button class="btn btn-primary" id="rdump-apply-btn" onclick="applyRedumpResult()">✅ <span data-i18n="apply_title">Apply title</span></button>
+  </div>
+</div></div>
+
+<!-- Modal: Associate -->
+<div class="modal-overlay" id="modal-assoc">
+<div class="modal" style="max-width:440px">
+  <h2 data-i18n="associate_game">Associate with a game</h2>
+  <input type="hidden" id="assoc-id"><input type="hidden" id="assoc-type">
+  <p style="font-size:.8rem;color:var(--textd);margin-bottom:1rem;" id="assoc-filename"></p>
+  <div class="form-group"><label data-i18n="select_game">Select game</label>
+    <select id="assoc-game-select" style="width:100%"><option value="" data-i18n="unassigned">— Unassigned —</option></select>
+  </div>
+  <div class="modal-actions">
+    <button class="btn btn-secondary" onclick="document.getElementById('modal-assoc').classList.remove('show')" data-i18n="cancel">Cancel</button>
+    <button class="btn btn-primary" onclick="doAssociate()" data-i18n="save">Save</button>
+  </div>
+</div></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/files.js"></script>
+{% endblock %}

@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+{% block title %} — Library{% endblock %}
+
+{% block content %}
+<div class="controls">
+  <div class="search-wrap">
+    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" id="search" placeholder="Search collection..." data-i18n-placeholder="search_collection">
+  </div>
+  <select id="filter-genre"><option value="" data-i18n="all_genres">All genres</option></select>
+  <button class="btn btn-primary" onclick="openAddModal()"><span data-i18n="add_game">+ Add game</span></button>
+</div>
+<div class="filter-pills">
+  <button class="pill active" data-status=""><span data-i18n="all">All</span></button>
+  <button class="pill" data-status="Jucat">✅ <span data-i18n="played_status">Played</span></button>
+  <button class="pill" data-status="Neterminat">⏳ <span data-i18n="unfinished_status">Unfinished</span></button>
+  <button class="pill" data-status="Wishlist">💜 <span data-i18n="wishlist_status">Wishlist</span></button>
+  <button class="pill" data-media="BD">📀 <span data-i18n="bd">BD</span></button>
+  <button class="pill" data-media="DVD">💿 <span data-i18n="dvd">DVD</span></button>
+  <button class="pill" data-media="CD">💿 <span data-i18n="cd">CD</span></button>
+  <button class="pill" data-media="Cartridge">🎴 <span data-i18n="cartridge">Cartridge</span></button>
+</div>
+<div class="games-grid" id="games-grid"><div class="empty"><div class="empty-icon">🎮</div><h3 data-i18n="loading">Loading...</h3></div></div>
+
+<!-- Modal: Add/Edit -->
+<div class="modal-overlay" id="modal-add">
+<div class="modal">
+  <h2 id="modal-title" data-i18n="modal_add_title">Add Game</h2>
+  <input type="hidden" id="edit-id"><input type="hidden" id="f-rawg-id">
+  <div class="form-group">
+    <label>🔍 <span data-i18n="search_ps_store">Search PS Store</span></label>
+    <div class="ps-search-wrap">
+      <input type="text" id="ps-search-input" placeholder="ex: God of War, Elden Ring..." data-i18n-placeholder="search_placeholder">
+      <div id="ps-search-results" class="search-results" style="display:none"></div>
+    </div>
+  </div>
+  <div id="modal-add-note" style="display:none;background:var(--bg3);border:1px solid var(--cyan);color:var(--cyan);border-radius:6px;padding:.45rem .8rem;font-size:.8rem;margin-bottom:.5rem"></div>
+  <div class="imported-banner" id="imported-banner">
+    <img id="imported-thumb" class="preview-cover" src="" alt=""><span>✅ <span data-i18n="imported_data">Data imported! You can modify.</span></span>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label data-i18n="title">Title</label> *<input type="text" id="f-title"></div>
+    <div class="form-group"><label data-i18n="genre">Genre</label><input type="text" id="f-genre" placeholder="Action, RPG..."></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label data-i18n="platform">Platform</label>
+      <select id="f-platform"><option>PS5</option><option>PS4</option><option>PS3</option><option>PS2</option><option>PS1</option><option>PSP</option></select>
+    </div>
+    <div class="form-group"><label data-i18n="status">Status</label>
+      <select id="f-status"><option>Wishlist</option><option>Neterminat</option><option>Jucat</option></select>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label data-i18n="developer">Developer</label><input type="text" id="f-developer"></div>
+    <div class="form-group"><label data-i18n="publisher">Publisher</label><input type="text" id="f-publisher"></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label data-i18n="release_date">Release date</label><input type="text" id="f-release" placeholder="YYYY-MM-DD"></div>
+    <div class="form-group"><label data-i18n="ps_code">Cod PS (CUSA/PPSA)</label><input type="text" id="f-pscode" placeholder="PPSA01234..."></div>
+  </div>
+  <div class="form-group"><label data-i18n="description">Description</label><textarea id="f-desc"></textarea></div>
+  <div class="form-group"><label data-i18n="rating">Rating</label>
+    <div class="star-rating-input" id="star-input">
+      <button class="star-input" data-val="1">★</button><button class="star-input" data-val="2">★</button>
+      <button class="star-input" data-val="3">★</button><button class="star-input" data-val="4">★</button>
+      <button class="star-input" data-val="5">★</button>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>🖼️ <span data-i18n="cover">Cover</span></label>
+      <div class="img-input-wrap">
+        <input type="text" id="f-cover" placeholder="URL sau uploadează ▶">
+        <label class="btn-upload-img" title="Uploadează imagine">📁
+          <input type="file" class="img-file-input" id="cover-file-input" accept=".jpg,.jpeg,.png,.webp">
+        </label>
+        <button type="button" class="btn-browse" onclick="openImageBrowser('f-cover','cover-preview')" title="Caută pe server">🔍</button>
+      </div>
+      <img id="cover-preview" class="img-preview" src="" alt="preview">
+      <div id="cover-upload-progress" class="upload-progress"></div>
+    </div>
+    <div class="form-group">
+      <label>🖼️ <span data-i18n="banner">Banner</span></label>
+      <div class="img-input-wrap">
+        <input type="text" id="f-banner" placeholder="URL sau uploadează ▶">
+        <label class="btn-upload-img" title="Uploadează banner">📁
+          <input type="file" class="img-file-input" id="banner-file-input" accept=".jpg,.jpeg,.png,.webp">
+        </label>
+        <button type="button" class="btn-browse" onclick="openImageBrowser('f-banner','banner-preview')" title="Caută pe server">🔍</button>
+      </div>
+      <img id="banner-preview" class="img-preview" src="" alt="preview">
+      <div id="banner-upload-progress" class="upload-progress"></div>
+    </div>
+  </div>
+  <!-- Screenshots & Other images -->
+  <div class="form-row">
+    <div class="form-group">
+      <label>📸 <span data-i18n="screenshots">Screenshots</span></label>
+      <div class="screenshot-thumbs" id="screenshot-thumbs"></div>
+      <label class="btn-upload-img" style="display:inline-block;margin-top:.3rem;cursor:pointer">📷 <span data-i18n="add_screenshots">Add screenshots</span>
+        <input type="file" class="img-file-input" id="screenshot-file-input" accept=".jpg,.jpeg,.png,.webp" multiple>
+      </label>
+      <div id="screenshot-upload-progress" class="upload-progress"></div>
+    </div>
+    <div class="form-group">
+      <label>🖼️ <span data-i18n="other_images">Other images</span></label>
+      <div class="screenshot-thumbs" id="other-thumbs"></div>
+      <label class="btn-upload-img" style="display:inline-block;margin-top:.3rem;cursor:pointer">🖼️ <span data-i18n="add_images">Add images</span>
+        <input type="file" class="img-file-input" id="other-file-input" accept=".jpg,.jpeg,.png,.webp" multiple>
+      </label>
+      <div id="other-upload-progress" class="upload-progress"></div>
+    </div>
+  </div>
+  <!-- Video Links -->
+  <div class="form-group">
+    <label>🎬 <span data-i18n="video_links">Video Links</span></label>
+    <div id="video-links-list"></div>
+    <button type="button" class="btn btn-outline btn-sm" onclick="addVideoLinkRow()" style="margin-top:.3rem">+ <span data-i18n="add_video_link">Add video link</span></button>
+  </div>
+  <div class="physical-section">
+    <div class="physical-section-title">💿 <span data-i18n="physical_media">Physical media (optional)</span></div>
+    <div class="media-type-picker" id="media-type-picker">
+      <button class="media-btn active" data-val="Digital">💾 <span data-i18n="digital">Digital</span></button>
+      <button class="media-btn" data-val="BD">📀 <span data-i18n="blu_ray">BD/Blu-ray</span></button>
+      <button class="media-btn" data-val="DVD">💿 DVD</button>
+      <button class="media-btn" data-val="CD">💿 CD</button>
+      <button class="media-btn" data-val="Cartridge">🎴 <span data-i18n="cartridge">Cartridge</span></button>
+      <button class="media-btn" data-val="UMD">🔘 UMD (PSP)</button>
+      <button class="media-btn" data-val="Images">🖼️ <span data-i18n="media_images">Images</span></button>
+      <button class="media-btn" data-val="Arhiva">📦 <span data-i18n="media_archive">Archive</span></button>
+      <button class="media-btn" data-val="Folder">📁 <span data-i18n="media_folder">Folder</span></button>
+    </div>
+    <div id="physical-extra" style="display:none">
+      <div class="form-row" style="margin-top:.7rem">
+        <div class="form-group"><label data-i18n="edition">Edition</label>
+          <select id="f-phys-edition">
+            <option value="">Standard</option>
+            <option>Collector's Edition</option><option>Limited Edition</option>
+            <option>GOTY Edition</option><option>Steelbook Edition</option><option>Launch Edition</option>
+          </select>
+        </div>
+        <div class="form-group"><label data-i18n="disc_condition">Disc/box condition</label>
+          <select id="f-phys-condition">
+            <option value="" data-i18n="condition_unknown">Unknown</option>
+            <option data-i18n="condition_mint">Mint — like new</option><option data-i18n="condition_excellent">Excellent</option><option data-i18n="condition_good">Good</option>
+            <option data-i18n="condition_acceptable">Acceptable</option><option data-i18n="condition_poor">Poor</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label data-i18n="barcode">Barcode</label><input type="text" id="f-phys-barcode" placeholder="5055069934000"></div>
+        <div class="form-group"><label data-i18n="notes">Notes</label><input type="text" id="f-phys-notes" placeholder="e.g. no manual, scratched..." data-i18n-placeholder="notes_placeholder"></div>
+      </div>
+    </div>
+  </div>
+  <!-- Files, Saves & DLC -->
+  <div id="modal-game-media-section" style="margin-top:1rem">
+    <div id="modal-media-disabled-msg" style="text-align:center;padding:.8rem;color:var(--textd);font-size:.82rem;display:none" data-i18n="save_game_first">
+      💡 Save the game first to add files, saves and DLC
+    </div>
+    <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+      <div style="display:flex;border-bottom:1px solid var(--border);background:var(--bg2)">
+        <button class="modal-media-tab active" onclick="switchModalMediaTab(this,'modal-files-panel')"
+          style="flex:1;padding:.5rem .8rem;background:none;border:none;border-right:1px solid var(--border);color:var(--text);cursor:pointer;font-size:.82rem;font-weight:600">
+          💿 <span data-i18n="associated_files">Files</span>
+        </button>
+        <button class="modal-media-tab" onclick="switchModalMediaTab(this,'modal-saves-panel')"
+          style="flex:1;padding:.5rem .8rem;background:none;border:none;border-right:1px solid var(--border);color:var(--textd);cursor:pointer;font-size:.82rem;font-weight:600">
+          💾 <span data-i18n="saves_tab">Saves</span>
+        </button>
+        <button class="modal-media-tab" onclick="switchModalMediaTab(this,'modal-dlc-panel')"
+          style="flex:1;padding:.5rem .8rem;background:none;border:none;color:var(--textd);cursor:pointer;font-size:.82rem;font-weight:600">
+          📦 DLC
+        </button>
+      </div>
+      <!-- Files panel -->
+      <div id="modal-files-panel" style="padding:.75rem">
+        <div id="modal-files-list" style="margin-bottom:.6rem;min-height:1.5rem"></div>
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center">
+          <label class="btn btn-outline btn-sm" style="cursor:pointer;font-size:.78rem">
+            📂 <span data-i18n="upload_file">Upload file</span>
+            <input type="file" id="modal-file-upload-input" multiple accept=".iso,.bin,.cue,.pkg,.rap,.rif,.edat" style="display:none" onchange="uploadModalFile()">
+          </label>
+          <span id="modal-file-upload-status" style="font-size:.78rem;color:var(--textd)"></span>
+        </div>
+      </div>
+      <!-- Saves panel -->
+      <div id="modal-saves-panel" style="display:none;padding:.75rem">
+        <div id="modal-saves-list" style="margin-bottom:.6rem;min-height:1.5rem"></div>
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center">
+          <label class="btn btn-outline btn-sm" style="cursor:pointer;font-size:.78rem">
+            📂 <span data-i18n="upload_save">Upload save</span>
+            <input type="file" id="modal-save-upload-input" multiple style="display:none" onchange="uploadModalSave()">
+          </label>
+          <span id="modal-save-upload-status" style="font-size:.78rem;color:var(--textd)"></span>
+        </div>
+      </div>
+      <!-- DLC panel -->
+      <div id="modal-dlc-panel" style="display:none;padding:.75rem">
+        <div id="modal-dlc-list" style="margin-bottom:.6rem;min-height:1.5rem"></div>
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center">
+          <label class="btn btn-outline btn-sm" style="cursor:pointer;font-size:.78rem">
+            📂 <span data-i18n="upload_dlc">Upload DLC</span>
+            <input type="file" id="modal-dlc-upload-input" multiple accept=".pkg,.zip" style="display:none" onchange="uploadModalDlc()">
+          </label>
+          <span id="modal-dlc-upload-status" style="font-size:.78rem;color:var(--textd)"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn btn-secondary" onclick="closeModal('modal-add')" data-i18n="cancel">Cancel</button>
+    <button class="btn btn-primary" onclick="saveGame()" data-i18n="save">Save</button>
+  </div>
+</div></div>
+
+<!-- Modal: Detail -->
+<div class="modal-overlay" id="modal-detail">
+<div class="modal modal-lg">
+  <img id="d-banner" class="detail-banner" src="" alt="">
+  <div class="detail-header">
+    <img id="d-cover" class="detail-cover" src="" alt="" onerror="this.style.display='none'">
+    <div style="flex:1">
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:5px;flex-wrap:wrap">
+        <span id="d-platform" class="platform-tag"></span>
+        <span id="d-status" class="status-badge"></span>
+      </div>
+      <div style="font-family:'Rajdhani',sans-serif;font-size:1.2rem;font-weight:700;margin-bottom:4px;" id="d-title"></div>
+      <div class="stars" id="d-stars"></div>
+      <div class="detail-meta" id="d-meta"></div>
+    </div>
+  </div>
+  <div class="detail-desc" id="d-desc"></div>
+  <div id="d-pscode-wrap" style="display:none">
+    <div style="font-size:.67rem;color:var(--textd);letter-spacing:1px;text-transform:uppercase;margin-top:.65rem;margin-bottom:3px;" data-i18n="ps_store_code">PS Store Code</div>
+    <div class="ps-code-box" id="d-pscode"></div>
+  </div>
+  <div id="d-physical-wrap" style="display:none;margin-top:.7rem;">
+    <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
+      <span id="d-media-badge" class="media-badge"></span>
+      <span id="d-phys-edition" style="font-size:.78rem;color:var(--textd);"></span>
+      <span id="d-phys-condition" style="font-size:.78rem;color:var(--textd);"></span>
+    </div>
+    <div id="d-phys-notes" style="font-size:.78rem;color:var(--textd);margin-top:4px;font-style:italic;"></div>
+    <div id="d-phys-barcode" style="font-size:.72rem;color:var(--textd);opacity:.6;margin-top:2px;"></div>
+  </div>
+  <div class="files-section">
+    <h4>💿 <span data-i18n="associated_files">Associated files</span>
+      <a href="/fisiere" class="btn btn-outline btn-sm" data-i18n="manage_in_fm">Manage in File Manager</a></h4>
+    <div id="d-files-list"></div>
+  </div>
+  <div class="modal-actions">
+    <button class="btn btn-secondary" onclick="closeModal('modal-detail')" data-i18n="close">Close</button>
+    <button class="btn btn-outline btn-sm" id="btn-fetch-images" style="font-size:.78rem" onclick="fetchGameImages(currentDetailId)">⬇️ <span data-i18n="save_images_local">Save images locally</span></button>
+    <button class="btn btn-edit" id="d-edit-btn">✏️ <span data-i18n="edit">Edit</span></button>
+    <button class="btn btn-danger btn-sm" id="d-del-btn">🗑️</button>
+  </div>
+</div></div>
+
+<!-- Modal: Image Browser -->
+<div class="browse-overlay" id="modal-browse-img">
+<div class="browse-modal">
+  <h3 id="browse-img-title">🔍 <span data-i18n="browse_images_title">Choose image from server</span></h3>
+  <div class="browse-search">
+    <input type="text" id="browse-img-search" placeholder="Search images..." data-i18n-placeholder="browse_search_placeholder" oninput="filterBrowseImages()">
+  </div>
+  <div class="browse-grid" id="browse-img-grid">
+    <div class="browse-empty" data-i18n="loading">Loading...</div>
+  </div>
+  <div style="margin-top:.8rem;display:flex;justify-content:flex-end">
+    <button class="btn btn-secondary" onclick="closeBrowseModal()" data-i18n="close">Close</button>
+  </div>
+</div></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/library.js"></script>
+{% endblock %}
