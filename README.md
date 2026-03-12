@@ -126,9 +126,9 @@ Prowlarr, download clients (qBittorrent/Transmission), and ps3netsrv are configu
 PS Library ships with English and Romanian. To add your own language:
 
 1. Copy `lang/example.json` to `lang/xx.json` (where `xx` is your [ISO 639-1 code](https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes))
-2. Set the `lang_name` key to your language's native name (e.g. `"Deutsch"`, `"Fran\u00e7ais"`)
+2. Set the `lang_name` key to your language's native name (e.g. `"Deutsch"`, `"Français"`)
 3. Translate all values (keep the keys unchanged)
-4. Mount or copy the file into the container at `/data/lang/xx.json`
+4. Place the file in `./ps-data/lang/xx.json` on your host (this maps to `/data/lang/` inside the container)
 5. Restart the container — your language will appear in the language selector
 
 Pull requests with new language files are welcome.
