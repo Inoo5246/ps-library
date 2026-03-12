@@ -1,5 +1,9 @@
 # PS Library
 
+![GitHub License](https://img.shields.io/github/license/Inoo5246/ps-library)
+![GitHub stars](https://img.shields.io/github/stars/Inoo5246/ps-library)
+![GitHub issues](https://img.shields.io/github/issues/Inoo5246/ps-library)
+
 A self-hosted PlayStation game library manager with built-in file management, metadata lookup, and network streaming. Runs as a single Docker container.
 
 This is a hobby project born out of a desire to have a clean, Jellyfin-like interface for managing a PlayStation game collection. Built for personal use and shared with the community in case others find it useful.
