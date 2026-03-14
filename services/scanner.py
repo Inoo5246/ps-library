@@ -50,9 +50,19 @@ _SKIP_DIRNAMES = {"licenses", "images", "screenshots", "_uploading", "_licenses"
 
 
 def scan_files():
-    """Scan /games and custom folders, add new files to DB. Returns stats dict."""
+    """Scan /games and custom folders, add new files to DB and remove missing ones. Returns stats dict."""
     conn = get_db()
-    found_files = found_licenses = 0
+    found_files = found_licenses = removed_files = removed_licenses = 0
+
+    # Remove DB entries for files/folders that no longer exist on disk
+    for row in conn.execute("SELECT id, filepath FROM game_files").fetchall():
+        if not os.path.exists(row["filepath"]):
+            conn.execute("DELETE FROM game_files WHERE id=?", (row["id"],))
+            removed_files += 1
+    for row in conn.execute("SELECT id, filepath FROM licenses").fetchall():
+        if not os.path.exists(row["filepath"]):
+            conn.execute("DELETE FROM licenses WHERE id=?", (row["id"],))
+            removed_licenses += 1
 
     # 1) Scan /games
     found_files += _scan_dir(conn, GAMES_DIR)
@@ -112,7 +122,8 @@ def scan_files():
 
     conn.commit()
     conn.close()
-    return {"scanned_files": found_files, "scanned_licenses": found_licenses}
+    return {"scanned_files": found_files, "scanned_licenses": found_licenses,
+            "removed_files": removed_files, "removed_licenses": removed_licenses}
 
 
 def _scan_dir(conn, dirpath, cf_types=None, forced_platform=None):
