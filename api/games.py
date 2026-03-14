@@ -68,7 +68,7 @@ def update_game(gid):
     platform_changed = new_platform != old_platform
     files_moved = 0
 
-    if title_changed:
+    if title_changed or platform_changed:
         old_dir = os.path.join(GAMES_DIR, old_platform, safe_folder_name(old_title))
         new_dir = os.path.join(GAMES_DIR, new_platform, safe_folder_name(new_title))
         if old_dir != new_dir:
