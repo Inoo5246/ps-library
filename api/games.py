@@ -143,22 +143,37 @@ def update_game(gid):
 
     if platform_changed:
         conn.execute("UPDATE game_files SET platform=? WHERE game_id=?", (new_platform, gid))
-        # Move images folder from old platform dir to new platform dir
-        from services.paths import get_images_dir
-        old_img_dir = os.path.join(get_images_dir(), old_platform, safe_folder_name(old_title))
-        new_img_dir = os.path.join(get_images_dir(), new_platform, safe_folder_name(new_title))
-        if os.path.isdir(old_img_dir) and old_img_dir != new_img_dir:
-            os.makedirs(os.path.dirname(new_img_dir), exist_ok=True)
-            if not os.path.exists(new_img_dir):
-                shutil.move(old_img_dir, new_img_dir)
-            else:
-                for item in os.listdir(old_img_dir):
-                    src = os.path.join(old_img_dir, item)
-                    dst = os.path.join(new_img_dir, item)
-                    if not os.path.exists(dst):
-                        shutil.move(src, dst)
-                try: shutil.rmtree(old_img_dir)
-                except: pass
+        from services.paths import get_images_dir, get_saves_dir, get_dlc_dir
+        old_slug = safe_folder_name(old_title)
+        new_slug = safe_folder_name(new_title)
+
+        def _move_dir(base_dir, table, platform_col="platform", filepath_col="filepath"):
+            old_d = os.path.join(base_dir, old_platform, old_slug)
+            new_d = os.path.join(base_dir, new_platform, new_slug)
+            if os.path.isdir(old_d) and old_d != new_d:
+                os.makedirs(os.path.dirname(new_d), exist_ok=True)
+                if not os.path.exists(new_d):
+                    shutil.move(old_d, new_d)
+                else:
+                    for item in os.listdir(old_d):
+                        src = os.path.join(old_d, item)
+                        dst = os.path.join(new_d, item)
+                        if not os.path.exists(dst):
+                            shutil.move(src, dst)
+                    try: shutil.rmtree(old_d)
+                    except: pass
+            if table:
+                for row in conn.execute(
+                        f"SELECT id, {filepath_col} FROM {table} WHERE game_id=?", (gid,)).fetchall():
+                    if old_d in row[filepath_col]:
+                        new_fp = row[filepath_col].replace(old_d, new_d)
+                        conn.execute(
+                            f"UPDATE {table} SET {filepath_col}=?, {platform_col}=? WHERE id=?",
+                            (new_fp, new_platform, row["id"]))
+
+        _move_dir(get_images_dir(), None)          # images — no DB table
+        _move_dir(get_saves_dir(),  "game_saves")  # saves
+        _move_dir(get_dlc_dir(),    "game_dlc")    # DLC
 
     conn.execute("""UPDATE games SET title=?,genre=?,platform=?,rating=?,status=?,cover_url=?,
         banner_url=?,description=?,ps_code=?,developer=?,publisher=?,release_date=?,metacritic=?,
